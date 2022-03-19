@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6/dist/vue.min.js"></script>
+<script src="https://unpkg.com/vue-resource"></script>
+
+<head>
+    <meta charset="utf-8"/>
+    <title>SOA #2</title>
+
+    <link rel="stylesheet" type="text/css" href="css/thirdparty/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/thirdparty/bootstrap-table.min.css">
+</head>
+
+<body>
+<div id="app" class="pl-5 pr-5">
+    <filters v-on:filter="filter"></filters>
+    <result-table v-bind:spacemarines="spacemarines" v-on:deletespacemarine="deleteSpaceMarine"
+                  v-on:editspacemarine="editSpaceMarine"></result-table>
+    <add-marine v-on:addspacemarine="addSpaceMarine" v-bind:chapter-list="chapterList"
+                v-bind:coordinates-list="coordinatesList" ref="mainform"></add-marine>
+    <delete-loyal v-on:delete-loyal="onDeleteLoyal" v-bind:delete-loyal="deleteLoyal"></delete-loyal>
+    <min-heart-count v-on:min-heart-count="onMinHeartCount" v-bind:min-heart-count="minHeartCount"></min-heart-count>
+    <count-health v-on:count-health="onCountHealth" :value="minHealth"></count-health>
+    <set-paratrooper v-on:set-paratrooper="setparatrooper" v-bind:paratrooper="paratrooper" v-bind:starship="starship" v-bind:total-on-board="totalOnBoard"></set-paratrooper>
+    <land-all v-on:land-all="landall"  v-bind:landStarship="landStarship" v-bind:check-land="checkLand"></land-all>
+</div>
+
+<script src="js/main-components.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/addmarine.js"></script>
+<script src="js/parser.js"></script>
+<script src="https://momentjs.com/downloads/moment-with-locales.min.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            spacemarines: [],
+            coordinatesList: [],
+            chapterList: [],
+            deleteLoyal: undefined,
+            countHealth: undefined,
+            deleteLoyalStatus: "-",
+            minHeartCount: "-",
+            minHealth: "-",
+            paratrooper: undefined,
+            starship: undefined,
+            landStarship: undefined,
+            totalOnBoard: {},
+            checkLand: {},
+            clientHost: "https://localhost:8181/service-oriented-architecture-actions-jaxrs-api/",
+            host: "https://localhost:8454/lab2-spring/",
+            // host: "http://localhost:8090/lab2-spring/",
+            // clientHost: "http://localhost:8080/service-oriented-architecture-actions-jaxrs-api/",
+        },
+        methods: {
+            filter: function (filterInfo) {
+                console.log("AAA FILTER CALL");
+                let params = []
+
+                if (filterInfo.elementsCount) {
+                    params.push('count=' + filterInfo.elementsCount)
+
+                    if (filterInfo.pageNumber) {
+                        params.push('page=' + filterInfo.pageNumber)
+                    }
+                }
+
+                console.log(filterInfo.orderBy1)
+                console.log(filterInfo.orderDirection1)
+
+                if (filterInfo.orderBy1 && filterInfo.orderDirection1) {
+                    params.push('order=' + filterInfo.orderBy1 + ',' + filterInfo.orderDirection1)
+                }
+                if (filterInfo.orderBy2 && filterInfo.orderDirection2) {
+                    params.push('order=' + filterInfo.orderBy2 + ',' + filterInfo.orderDirection2)
+                }
+                if (filterInfo.orderBy3 && filterInfo.orderDirection3) {
+                    params.push('order=' + filterInfo.orderBy3 + ',' + filterInfo.orderDirection3)
+                }
+                if (filterInfo.orderBy4 && filterInfo.orderDirection4) {
+                    params.push('order=' + filterInfo.orderBy4 + ',' + filterInfo.orderDirection4)
+                }
+                if (filterInfo.orderBy5 && filterInfo.orderDirection5) {
+                    params.push('order=' + filterInfo.orderBy5 + ',' + filterInfo.orderDirection5)
+                }
+                if (filterInfo.orderBy6 && filterInfo.orderDirection6) {
+                    params.push('order=' + filterInfo.orderBy6 + ',' + filterInfo.orderDirection6)
+                }
+                if (filterInfo.orderBy7 && filterInfo.orderDirection7) {
+                    params.push('order=' + filterInfo.orderBy7 + ',' + filterInfo.orderDirection7)
+                }
+                if (filterInfo.orderBy8 && filterInfo.orderDirection8) {
+                    params.push('order=' + filterInfo.orderBy8 + ',' + filterInfo.orderDirection8)
+                }
+                if (filterInfo.orderBy9 && filterInfo.orderDirection9) {
+                    params.push('order=' + filterInfo.orderBy9 + ',' + filterInfo.orderDirection9)
+                }
+
+                if (filterInfo.filterById) {
+                    params.push('filter=id,==,' + filterInfo.filterById)
+                }
+                if (filterInfo.filterByName) {
+                    params.push('filter=name,contains,' + filterInfo.filterByName)
+                }
+                if (filterInfo.filterByCoordinates) {
+                    params.push('filter=coordinates,==,' + filterInfo.filterByCoordinates)
+                }
+                if (filterInfo.filterByCreationDate ) {
+                    params.push('filter=creationDate,==,' + filterInfo.filterByCreationDate)
+                }
+                if (filterInfo.filterByHealth) {
+                    params.push('filter=health,==,' + filterInfo.filterByHealth)
+                }
+                if (filterInfo.filterByHeartCount) {
+                    params.push('filter=heartCount,==,'+ filterInfo.filterByHeartCount)
+                }
+                if (filterInfo.filterByLoyal) {
+                    params.push('filter=loyal,==,' + filterInfo.filterByLoyal)
+                    // params.push('filter=loyal,==,' + filterInfo.filterByLoyalAction + ',' + filterInfo.filterByLoyal)
+                }
+                if (filterInfo.filterByCategory) {
+                    params.push('filter=category,==,' + filterInfo.filterByCategory)
+                }
+                if (filterInfo.filterByChapter) {
+                    params.push('filter=chapter,==,' + filterInfo.filterByChapter)
+                }
+
+                params = params.join('&')
+
+                this.$http.get(
+                    this.host + 'api/space-marine?' + params
+                ).then(
+                    (response) => {
+                        console.log({xml1: convertObjectToXml({x: 1, b: [0, 1, 2]})})
+                        console.log({result: parseXml(response.body), xml: convertObjectToXml(parseXml(response.body))})
+                        this.spacemarines = parseXml(response.body).ResultListDto.results;
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+            },
+            deleteSpaceMarine: function (spaceMarine) {
+                this.$http.delete(
+                    this.host + 'api/space-marine/' + spaceMarine.id
+                ).then(
+                    (response) => {
+                        this.spacemarines.splice(this.spacemarines.indexOf(spaceMarine), 1);
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+                axios.post(this.clientHost + `api/starship/${spaceMarine.id}`)
+            },
+            addSpaceMarine: function (spaceMarine) {
+                if (spaceMarine.id) {
+                    this.$http.put(
+                        this.host + `api/space-marine/${spaceMarine.id}`,
+                        toXml({ SpaceMarineWithIdDto: spaceMarine }),
+                        {headers: {'Content-Type': 'application/xml; charset=UTF-8'}}
+                    ).then(
+                        (response) => {
+                            for (let i in this.spacemarines) {
+                                if (spaceMarine.id === this.spacemarines[i].id) {
+                                    this.spacemarines.splice(i, 1);
+                                    break
+                                }
+                            }
+                            this.spacemarines.push(parseXml(response.body));
+                        },
+                        (error) => {
+                            if (error.status === 403 || error.status === 0) {
+                            }
+                        }
+                    );
+                } else {
+                    this.$http.post(
+                        this.host +  'api/space-marine',
+                        toXml({SpaceMarineWithIdDto: spaceMarine}),
+                        {headers: {'Content-Type': 'application/xml; charset=UTF-8'}}
+                    ).then(
+                        (response) => {
+                            this.spacemarines.push(parseXml(response.body));
+                        },
+                        (error) => {
+                            if (error.status === 403 || error.status === 0) {
+                            }
+                        }
+                    );
+                }
+            },
+            editSpaceMarine: function (spaceMarine) {
+                this.$refs.mainform.$el.scrollIntoView({behavior: 'smooth'});
+                this.$refs.mainform.updateFields(spaceMarine);
+            },
+
+            onDeleteLoyal: function (deleteLoyal) {
+                this.$http.delete(
+                    this.host + 'api/space-marine/loyal?value=' + deleteLoyal
+                ).then(
+                    (response) => {
+                        this.deleteLoyalStatus = parseXml(response.body).status;
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+            },
+
+
+            onMinHeartCount: function () {
+                this.$http.get(
+                    this.host +  'api/space-marine/heartCount/min',
+                ).then(
+                    (response) => {
+                        // console.log({body: response.body})
+                        this.minHeartCount = parseXml(response.body).SpaceMarineDto;
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+            },
+
+            onCountHealth: function (countHealth) {
+                this.$http.get(
+                    this.host +  `api/space-marine/health/count?value=${countHealth}`,
+                ).then(
+                    (response) => {
+                        this.minHealth = parseXml(response.body).HealthCountDto;
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+            },
+            setparatrooper: function ({ paratrooper, starship }) {
+                axios.post(this.clientHost + `api/starship/${starship}/load/${paratrooper}`)
+                    .then(
+                    (response) => {
+                        this.totalOnBoard = parseXml(response.data).starshipDTO;
+                    },
+                    (error) => {
+                        // i
+                    }
+                );
+                // this.$http.post("https://localhost:8181/service-oriented-architecture-actions-jaxrs-api/api/starship/1/load/1")
+                // this.$http.post(
+                //     this.clientHost + `api/starship/${starship}/load/${paratrooper}`,
+                //     // this.clientHost + "api/starship/2/load/2"
+                // ).then(
+                //     (response) => {
+                //         this.totalOnBoard = parseXml(response.body).starshipDTO;
+                //     },
+                //     (error) => {
+                //         if (error.status === 403 || error.status === 0) {
+                //         }
+                //     }
+                // );
+            },
+            landall: function ({ landStarship }) {
+                axios.post(this.clientHost + `api/starship/${landStarship}/unload-all`)
+                    .then(
+                        (response) => {
+                            console.log(response.data)
+                            this.checkLand = parseXml(response.data).starshipDTO;
+                        },
+                        (error) => {
+                            // i
+                        }
+                    );
+
+                // this.$http.delete(
+                //     this.clientHost + `api/starship/${landStarship}/unload-all`,
+                // ).then(
+                //     (response) => {
+                //         console.log(response.body)
+                //         this.checkLand = parseXml(response.body).starshipDTO;
+                //     },
+                //     (error) => {
+                //         if (error.status === 403 || error.status === 0) {
+                //         }
+                //     }
+                // );
+            },
+            created: function () {
+                this.$http.get(
+                    this.host +  'api/space-marine',
+                    {}
+                ).then(
+                    (response) => {
+                        this.spacemarines = parseXml(response.body);
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+
+                this.$http.get(
+                    this.host +  'api/coordinates',
+                    {}
+                ).then(
+                    (response) => {
+                        this.coordinatesList = parseXml(response.body);
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+
+                this.$http.get(
+                    this.host +  'api/chapter',
+                    {}
+                ).then(
+                    (response) => {
+                        this.chapterList = parseXml(response.body);
+                    },
+                    (error) => {
+                        if (error.status === 403 || error.status === 0) {
+                        }
+                    }
+                );
+            }
+        }
+    })
+</script>
+</body>
+
+</html>
